@@ -11,4 +11,4 @@ add_executable(PSO
         Lib/Tasks.h
         Lib/Tasks.cpp)
 
-add_subdirectory(Lib)
+#add_subdirectory(Lib)

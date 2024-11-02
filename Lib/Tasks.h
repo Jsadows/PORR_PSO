@@ -12,17 +12,17 @@ public:
 };
 
 
-class Task1
+class Task1: public Task
 {
 private:
-    std:pair<float, float>  calcSumProduct(const std::vector<float> &x);
+    std::pair<float, float>  calcSumProduct(const std::vector<float> &x);
     
 public:
     float calculateTask(const std::vector<float> &x);
 };
 
 
-class Task2
+class Task2: public Task
 {
 private:
     
