@@ -17,6 +17,11 @@ std::pair<float, float>  Task1::calcSumProduct(const std::vector<float> &x)
     return sumProduct;
 }
 
+std::pair<float, float> Task1::getClosedInterval()
+{
+    return std::pair<float, float>(-40.0f, 40.0f);
+}
+
 float Task2::calculateTask(const std::vector<float> &x)
 {
     float sum = 0.0f;
@@ -25,4 +30,9 @@ float Task2::calculateTask(const std::vector<float> &x)
         sum += 100.0f*std::pow((x[i+1] -x[i]*x[i]), 2) + std::pow(1-x[i], 2);
     }
     return sum;
+}
+
+std::pair<float, float> Task2::getClosedInterval()
+{
+    return std::pair<float, float>(-10.0f, 10.0f);
 }

@@ -9,6 +9,6 @@ set(CMAKE_AUTOUIC ON)
 add_executable(PSO
         main.cpp
         Lib/Tasks.h
-        Lib/Tasks.cpp)
+        Lib/Tasks.cpp "Lib/Pso.h" "Lib/Pso.cpp")
 
 #add_subdirectory(Lib)
