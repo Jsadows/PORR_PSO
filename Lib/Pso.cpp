@@ -83,7 +83,7 @@ bool Pso::notStopCriterion(int m, float eps, const std::optional<std::vector<flo
 {
 	if(knownBestX)
 	{
-		return std::abs(bestParticleVal_ - task_->calculateTask(knownBestX)) > eps;
+		return std::abs(bestParticleVal_ - task_->calculateTask(*knownBestX)) > eps;
 	}
 	else
 	{
