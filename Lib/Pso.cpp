@@ -14,18 +14,20 @@ Pso::Pso(const std::shared_ptr<Task> task, int particleSize, int particleAmount,
 	bestParticle_.resize(particleSize);
 	betterParticles_.resize(particleAmount, std::vector<float>(particleSize));
 	betterParticlesVals_.resize(particleAmount);
+	bestParticleVal_ = std::numeric_limits<float>::infinity();
+	iterNoBetter_ = -1;
+	oldBestVal_ = std::numeric_limits<float>::infinity();
 }
 
 std::vector<float> Pso::findMin(int m, float eps, const std::optional<std::vector<float>>& knownBestX)
 {
 	initParticles();
-	// TODO: obroty algorytmu i wyznaczanie nast�pnych krok�w
 	std::uniform_real_distribution<> distrR(0, 1);
 	while (notStopCriterion(m, eps, knownBestX))
 	{
-		for (int i = 0; i < particles_.size(); ++i)
+		for (size_t i = 0; i < particles_.size(); ++i)
 		{
-			for (int x=0; x <  particles_[i].size(); ++i)
+			for (size_t x=0; x <  particles_[i].size(); ++x)
 			{
 				float r1 = distrR(gen_);
 				float r2 = distrR(gen_);
@@ -36,18 +38,18 @@ std::vector<float> Pso::findMin(int m, float eps, const std::optional<std::vecto
 				particles_[i][x] += velocity_[i][x];
 			}
 			float currentVal = task_->calculateTask(particles_[i]);
-			if (currentVal > betterParticlesVals_[i])
+			if (currentVal < betterParticlesVals_[i])
 			{
 				betterParticles_[i] = particles_[i];
-				bestParticleVal_ = currentVal;
-				if (currentVal > bestParticleVal_ )
+				betterParticlesVals_[i] = currentVal;
+				if (currentVal < bestParticleVal_ )
 				{
 					bestParticleVal_ = currentVal;
 					bestParticle_ = particles_[i];
 				}
 			}
 		}
-	
+		// std::cout<< bestParticleVal_ <<std::endl;
 	}
 	return bestParticle_;
 }
@@ -60,9 +62,9 @@ void Pso::initParticles()
 	float absIntervalDist = std::abs(interval.second - interval.first);
 	std::uniform_real_distribution<> distrStartVelocity(-absIntervalDist, absIntervalDist);
 	bestParticleVal_ = std::numeric_limits<float>::infinity();
-	for (int i = 0; i < particles_.size(); ++i)
+	for (size_t i = 0; i < particles_.size(); ++i)
 	{
-		for (int x=0; x <  particles_[i].size(); ++i)
+		for (size_t x=0; x <  particles_[i].size(); ++x)
 		{
 			particles_[i][x] = distrStartVal(gen_);
 			velocity_[i][x] = distrStartVelocity(gen_);
@@ -87,10 +89,15 @@ bool Pso::notStopCriterion(int m, float eps, const std::optional<std::vector<flo
 	}
 	else
 	{
-		if (std::abs(oldBestVal_ - bestParticleVal_) < eps) ++m;
-		oldBestVal_ = bestParticleVal_;
-		bool isMSmaller = m < iterNoBetter_;
-		if (isMSmaller) m = 0;
-		return isMSmaller;
+		if (std::abs(oldBestVal_ - bestParticleVal_) < eps)
+		{
+			++iterNoBetter_;
+		}
+		else
+		{
+			iterNoBetter_ = 0;
+			oldBestVal_ = bestParticleVal_;
+		}
+		return iterNoBetter_ < m;
 	}
 }

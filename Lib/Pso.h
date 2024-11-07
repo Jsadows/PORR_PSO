@@ -1,3 +1,6 @@
+#ifndef PSO_H
+#define PSO_H
+
 #include "Tasks.h"
 #include <memory>
 #include <vector>
@@ -6,6 +9,7 @@
 #include <utility>
 #include <limits>
 #include <optional>
+#include <iostream>
 
 class Pso
 {
@@ -30,3 +34,5 @@ private:
 	int iterNoBetter_;
 	std::mt19937 gen_;
 };
+
+#endif
