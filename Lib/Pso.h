@@ -1,7 +1,6 @@
 #ifndef PSO_H
 #define PSO_H
 
-#include "Tasks.h"
 #include <memory>
 #include <vector>
 #include <cmath>
@@ -10,6 +9,8 @@
 #include <limits>
 #include <optional>
 #include <iostream>
+#include <omp.h>
+#include "Tasks.h"
 
 class Pso
 {
@@ -32,7 +33,6 @@ private:
 	const float c3_;
 	float oldBestVal_;
 	int iterNoBetter_;
-	std::mt19937 gen_;
 };
 
 #endif

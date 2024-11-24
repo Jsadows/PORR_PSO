@@ -11,8 +11,8 @@ int main()
     std::shared_ptr<Task> t2 = std::make_unique<Task2>();
     std::cout<<t1->calculateTask(x)<<std::endl;
     std::cout<<t2->calculateTask(x)<<std::endl;
-    std::unique_ptr<Pso> pso = std::make_unique<Pso>(t2, 3, 500);
-    auto odp = pso->findMin(20, 0.01, x );
+    std::unique_ptr<Pso> pso = std::make_unique<Pso>(t2, 50, 550000, 1.0f, 2.0f, 2.0f);
+    auto odp = pso->findMin(200, 0.01 );
     std::cout <<  t2->calculateTask(odp) << std::endl;
     std::cout << "wektor" << std::endl;
     for (auto x : odp)

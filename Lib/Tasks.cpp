@@ -8,12 +8,14 @@ float Task1::calculateTask(const std::vector<float> &x)
 
 std::pair<float, float>  Task1::calcSumProduct(const std::vector<float> &x)
 {
-    std::pair<float, float> sumProduct (0.0f, 1.0f);
-    for (size_t i=0; i < x.size(); ++i)
+    float sum = 0.0f, product = 1.0f;
+    #pragma omp parallel for reduction(+:sum) reduction(*:product)
+    for (int i=0; i < x.size(); ++i)
     {
-        sumProduct.first +=  x[i]*x[i];
-        sumProduct.second *= std::cos(x[i]/((float)i+1.0f));
+       sum +=  x[i]*x[i];
+       product *= std::cos(x[i]/((float)i+1.0f));
     }
+    std::pair<float, float> sumProduct(sum, product);
     return sumProduct;
 }
 
@@ -25,7 +27,8 @@ std::pair<float, float> Task1::getClosedInterval()
 float Task2::calculateTask(const std::vector<float> &x)
 {
     float sum = 0.0f;
-    for (size_t i=0; i + 1 < x.size(); ++i)
+    #pragma omp parallel for reduction(+:sum)
+    for (int i=0; i < x.size()-1; ++i)
     {
         sum += 100.0f*std::pow((x[i+1] -x[i]*x[i]), 2) + std::pow(1.0f-x[i], 2);
     }

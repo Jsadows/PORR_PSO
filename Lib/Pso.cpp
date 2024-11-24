@@ -7,7 +7,6 @@ Pso::Pso(const std::shared_ptr<Task> task, int particleSize, int particleAmount,
 	, c1_(c1)
 	, c2_(c2)
 	, c3_(c3)
-	, gen_(std::random_device{}())
 {
 	particles_.resize(particleAmount, std::vector<float>(particleSize));
 	velocity_.resize(particleAmount, std::vector<float>(particleSize));
@@ -23,15 +22,17 @@ std::vector<float> Pso::findMin(int m, float eps, const std::optional<std::vecto
 {
 	initParticles();
 	std::uniform_real_distribution<> distrR(0, 1);
+	thread_local std::mt19937 gen(std::random_device{}());
 	while (notStopCriterion(m, eps, knownBestX))
 	{
-		for (size_t i = 0; i < particles_.size(); ++i)
+		#pragma omp parallel for schedule(static) num_threads(4)
+		for (int i = 0; i < particles_.size(); ++i)
 		{
-			for (size_t x=0; x <  particles_[i].size(); ++x)
+			for (int x=0; x <  particles_[i].size(); ++x)
 			{
-				float r1 = distrR(gen_);
-				float r2 = distrR(gen_);
-				float r3 = distrR(gen_);
+				float r1 = distrR(gen);
+				float r2 = distrR(gen);
+				float r3 = distrR(gen);
 				velocity_[i][x] = c1_ *r1 * velocity_[i][x] + 
 					c2_ * r2 * (betterParticles_[i][x] -  particles_[i][x]) +
 					c3_ * r3 * (bestParticle_[x] - particles_[i][x]);
@@ -42,14 +43,17 @@ std::vector<float> Pso::findMin(int m, float eps, const std::optional<std::vecto
 			{
 				betterParticles_[i] = particles_[i];
 				betterParticlesVals_[i] = currentVal;
-				if (currentVal < bestParticleVal_ )
+				#pragma omp critical
 				{
-					bestParticleVal_ = currentVal;
-					bestParticle_ = particles_[i];
+					if (currentVal < bestParticleVal_)
+					{
+						bestParticleVal_ = currentVal;
+						bestParticle_ = particles_[i];
+					}
 				}
 			}
 		}
-		// std::cout<< bestParticleVal_ <<std::endl;
+		std::cout<< bestParticleVal_ <<std::endl;
 	}
 	return bestParticle_;
 }
@@ -62,21 +66,26 @@ void Pso::initParticles()
 	float absIntervalDist = std::abs(interval.second - interval.first);
 	std::uniform_real_distribution<> distrStartVelocity(-absIntervalDist, absIntervalDist);
 	bestParticleVal_ = std::numeric_limits<float>::infinity();
-	for (size_t i = 0; i < particles_.size(); ++i)
+	thread_local std::mt19937 gen(std::random_device{}());
+	#pragma omp parallel for schedule(static) num_threads(4)
+	for (int i = 0; i < particles_.size(); ++i)
 	{
-		for (size_t x=0; x <  particles_[i].size(); ++x)
+		for (int x=0; x <  particles_[i].size(); ++x)
 		{
-			particles_[i][x] = distrStartVal(gen_);
-			velocity_[i][x] = distrStartVelocity(gen_);
+			particles_[i][x] = distrStartVal(gen);
+			velocity_[i][x] = distrStartVelocity(gen);
 		}
 		float taskValue = task_->calculateTask(particles_[i]);
 		betterParticles_[i] = particles_[i];
 		betterParticlesVals_[i] = taskValue;
-		if (taskValue < bestParticleVal_)
+		#pragma omp critical
 		{
-			bestParticleVal_ = taskValue;
-			bestParticle_ = particles_[i];
-			oldBestVal_ = taskValue;
+			if (taskValue < bestParticleVal_)
+			{
+				bestParticleVal_ = taskValue;
+				bestParticle_ = particles_[i];
+				oldBestVal_ = taskValue;
+			}
 		}
 	}
 }
