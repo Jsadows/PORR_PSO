@@ -24,8 +24,8 @@ private:
 	const std::shared_ptr<Task> task_;
 	float bestParticleVal_;
 	std::vector<float> bestParticle_;
-	std::vector<std::vector<float>> betterParticles_;
-	std::vector<float> betterParticlesVals_;
+	std::vector<std::vector<float>> bestLocalParticles_;
+	std::vector<float> bestLocalParticlesVals_;
 	std::vector<std::vector<float>> velocity_;
 	std::vector<std::vector<float>> particles_;
 	const float c1_;
