@@ -9,6 +9,7 @@
 #include <limits>
 #include <optional>
 #include <iostream>
+#include <cassert>
 #include <omp.h>
 #include "Tasks.h"
 

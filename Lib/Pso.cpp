@@ -1,6 +1,7 @@
 #include "Pso.h"
 
 #define USE_OMP
+//#define VISUALISE
 
 Pso::Pso(const std::shared_ptr<Task> task, int particleSize, int particleAmount,
 	const float c1, const float c2, const float c3)
@@ -17,6 +18,7 @@ Pso::Pso(const std::shared_ptr<Task> task, int particleSize, int particleAmount,
 	bestParticleVal_ = std::numeric_limits<float>::infinity();
 	iterNoBetter_ = -1;
 	oldBestVal_ = std::numeric_limits<float>::infinity();
+    std::cout.precision(3);
 }
 
 std::vector<float> Pso::findMin(int m, float eps, const std::optional<std::vector<float>>& knownBestX)
@@ -24,6 +26,7 @@ std::vector<float> Pso::findMin(int m, float eps, const std::optional<std::vecto
 	initParticles();
 	std::uniform_real_distribution<> distrR(0, 1);
 	std::mt19937 gen(std::random_device{}());
+    int epoch = 0;
 	while (notStopCriterion(m, eps, knownBestX))
 	{
         #ifdef USE_OMP
@@ -57,7 +60,15 @@ std::vector<float> Pso::findMin(int m, float eps, const std::optional<std::vecto
                 }
 			}
 		}
-		std::cout<< bestParticleVal_ <<std::endl;
+		std::cout<<"epoch "<< epoch <<":\t" << bestParticleVal_ <<std::endl;
+        epoch ++;
+
+        #ifdef VISUALISE
+        assert((void("Wrong particle size for visualise"),particles_[0].size() == 2));
+        for (auto particle : particles_) {
+            std::cout<<particle[0]<<",\t"<<particle[1]<<std::endl;
+        }
+        #endif
 	}
 	return bestParticle_;
 }
