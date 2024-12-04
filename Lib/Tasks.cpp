@@ -1,5 +1,7 @@
 #include "Tasks.h"
 
+//#define USE_OMP
+
 float Task1::calculateTask(const std::vector<float> &x)
 {
     std::pair<float, float> sumProduct = calcSumProduct(x);
@@ -9,7 +11,9 @@ float Task1::calculateTask(const std::vector<float> &x)
 std::pair<float, float>  Task1::calcSumProduct(const std::vector<float> &x)
 {
     float sum = 0.0f, product = 1.0f;
-    #pragma omp parallel for reduction(+:sum) reduction(*:product)
+    #ifdef USE_OMP
+    #pragma omp parallel for schedule(dynamic) default(none) firstprivate(x) reduction(+:sum) reduction(*:product)
+    #endif
     for (int i=0; i < x.size(); ++i)
     {
        sum +=  x[i]*x[i];
@@ -27,7 +31,9 @@ std::pair<float, float> Task1::getClosedInterval()
 float Task2::calculateTask(const std::vector<float> &x)
 {
     float sum = 0.0f;
-    #pragma omp parallel for reduction(+:sum)
+    #ifdef USE_OMP
+    #pragma omp parallel for schedule(dynamic) default(none) firstprivate(x) reduction(+:sum)
+    #endif
     for (int i=0; i < x.size()-1; ++i)
     {
         sum += 100.0f*std::pow((x[i+1] -x[i]*x[i]), 2) + std::pow(1.0f-x[i], 2);

@@ -1,5 +1,6 @@
 #include "Pso.h"
 
+#define USE_OMP
 
 Pso::Pso(const std::shared_ptr<Task> task, int particleSize, int particleAmount,
 	const float c1, const float c2, const float c3)
@@ -25,7 +26,9 @@ std::vector<float> Pso::findMin(int m, float eps, const std::optional<std::vecto
 	std::mt19937 gen(std::random_device{}());
 	while (notStopCriterion(m, eps, knownBestX))
 	{
+        #ifdef USE_OMP
 		#pragma omp parallel for schedule(dynamic) default(none) firstprivate(distrR, gen)
+        #endif
 		for (int i = 0; i < particles_.size(); ++i)
 		{
 			for (int x=0; x < particles_[i].size(); ++x)
@@ -43,7 +46,9 @@ std::vector<float> Pso::findMin(int m, float eps, const std::optional<std::vecto
 			{
 				bestLocalParticles_[i] = particles_[i];
 				bestLocalParticlesVals_[i] = currentVal;
+                #ifdef USE_OMP
                 #pragma omp critical
+                #endif
                 {
                     if (currentVal < bestParticleVal_) {
                         bestParticleVal_ = currentVal;
@@ -66,8 +71,10 @@ void Pso::initParticles()
 	std::uniform_real_distribution<> distrStartVelocity(-absIntervalDist, absIntervalDist); //Start speeds could be too high
 	bestParticleVal_ = std::numeric_limits<float>::infinity();
 	std::mt19937 gen(std::random_device{}());
+    #ifdef USE_OMP
 	#pragma omp parallel for schedule(dynamic) default(none) firstprivate(distrStartVal, distrStartVelocity, gen)
-	for (int i = 0; i < particles_.size(); ++i)
+	#endif
+    for (int i = 0; i < particles_.size(); ++i)
 	{
 		for (int x=0; x <  particles_[i].size(); ++x)
 		{
@@ -79,7 +86,9 @@ void Pso::initParticles()
 		bestLocalParticlesVals_[i] = taskValue;
         if (taskValue < bestParticleVal_)
         {
+            #ifdef USE_OMP
             #pragma omp critical
+            #endif
             {
                 bestParticleVal_ = taskValue;
                 bestParticle_ = particles_[i];
