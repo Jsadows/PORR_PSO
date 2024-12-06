@@ -4,15 +4,16 @@
 #include <vector>
 #include <memory>
 #include <fstream>
+#include "Lib/Testing.h"
 
-int main()
+int basic_run()
 {
     std::shared_ptr<Task> t1 = std::make_unique<Task1>();
     std::shared_ptr<Task> t2 = std::make_unique<Task2>();
 
     //setup for performance
     int particleSize = 10;
-    int particleAmount = 100000;
+    int particleAmount = 10000;
     auto task = t2;
     std::vector<float> params = {1.0f, 2.0f, 2.0f};
     bool vis = false;
@@ -43,4 +44,12 @@ int main()
     {
         std::cout<<x << " ";
     }
+
+    return 0;
+}
+
+int main(){
+    basic_run();
+//    testing_run();
+    return 0;
 }

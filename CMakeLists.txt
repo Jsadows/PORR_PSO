@@ -11,7 +11,10 @@ find_package(OpenMP)
 add_executable(PSO
         main.cpp
         Lib/Tasks.h
-        Lib/Tasks.cpp "Lib/Pso.h" "Lib/Pso.cpp")
+        Lib/Tasks.cpp "Lib/Pso.h" "Lib/Pso.cpp"
+        Lib/Testing.cpp
+        Lib/Testing.h
+)
 
 if(OpenMP_CXX_FOUND)
     target_link_libraries(PSO PUBLIC OpenMP::OpenMP_CXX)
