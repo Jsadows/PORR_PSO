@@ -17,6 +17,7 @@ Pso::Pso(const std::shared_ptr<Task> task, int particleSize, int particleAmount,
 	bestParticleVal_ = std::numeric_limits<float>::infinity();
     bestHistory_ = {};
 	iter = 0;
+    maxIter_ = 500;
 	oldBestVal_ = std::numeric_limits<float>::infinity();
     std::cout.precision(3);
 }
@@ -116,15 +117,18 @@ void Pso::initParticles()
 
 bool Pso::notStopCriterion(int m, float eps, const std::optional<std::vector<float>>& knownBestX)
 {
-	if(knownBestX)
+	if(iter > maxIter_) return false;
+
+    if(knownBestX)
 	{
         float sum = std::inner_product(bestParticle_.begin(), bestParticle_.end(), knownBestX->begin(), 0.0f,
                                        std::plus<>(),
                                        [](float a, float b) { return (a - b) * (a - b); }
         );
+        iter ++;
         return std::sqrt(sum) > eps;
 	}
-	else
+    else
 	{
         if( iter >= m ){
             oldBestVal_ = bestHistory_[iter-m];

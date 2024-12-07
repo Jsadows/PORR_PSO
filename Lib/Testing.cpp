@@ -18,13 +18,14 @@ int testing_run()
     std::vector<int> particleSizes = {10, 50, 100};
 
     // Number of particles in the swarm
-    int particleAmount = 1000;
+    int particleAmount = 50000;
 
     // PSO parameters
-    std::vector<float> params = {1.0f, 2.0f, 2.0f};
+    std::vector<float> params = {1.3f, 1.5f, 0.8f};
+//    std::vector<float> params = {1.5f, 1.5f, 0.8f};
 
     // Number of iterations and precision for stopping criterion
-    int maxIterations = 50;
+    int maxIterations = 100;
     float precision = 1e-6;
 
     // Output file for results
@@ -44,7 +45,7 @@ int testing_run()
                         knownBestX = std::vector<float>(particleSize, 1.0f); // All 1s for t2
                     }
                     // different precision when comparing the vector
-                    precision = 1e-3;
+                    precision = 1e-2;
                 }
 
                 // Create PSO instance

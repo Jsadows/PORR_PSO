@@ -12,17 +12,17 @@ int basic_run()
     std::shared_ptr<Task> t2 = std::make_unique<Task2>();
 
     //setup for performance
-    int particleSize = 10;
-    int particleAmount = 10000;
+    int particleSize = 100;
+    int particleAmount = 50000;
     auto task = t2;
-    std::vector<float> params = {1.0f, 2.0f, 2.0f};
+    std::vector<float> params = {1.3f, 1.5f, 0.8f};
     bool vis = false;
 
     //setup for visualise
 //    int particleSize = 2;
 //    int particleAmount = 50;
 //    auto task = t2;
-//    std::vector<float> params = {1.0f, 2.0f, 2.0f};
+//    std::vector<float> params = {1.3f, 1.5f, 0.8f};
 //    bool vis = true;
 
     std::unique_ptr<Pso> pso = std::make_unique<Pso>(task, particleSize, particleAmount, params[0], params[1], params[2]);
@@ -36,8 +36,8 @@ int basic_run()
         visualiseFile.close();
     }
     else{
-//        std::vector<float> (particleSize, 1.0)
-        odp = pso->findMin(50, 1e-6);
+//        odp = pso->findMin(100, 1e-6);
+        odp = pso->findMin(100, 1e-2,std::vector<float> (particleSize, 0.0));
     }
     std::cout <<  t2->calculateTask(odp) << std::endl;
     std::cout << "wektor" << std::endl;
@@ -50,7 +50,7 @@ int basic_run()
 }
 
 int main(){
-    basic_run();
-//    testing_run();
+//    basic_run();
+    testing_run();
     return 0;
 }
