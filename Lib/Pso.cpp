@@ -15,7 +15,8 @@ Pso::Pso(const std::shared_ptr<Task> task, int particleSize, int particleAmount,
 	bestLocalParticles_.resize(particleAmount, std::vector<float>(particleSize));
 	bestLocalParticlesVals_.resize(particleAmount);
 	bestParticleVal_ = std::numeric_limits<float>::infinity();
-	iterNoBetter_ = -1;
+    bestHistory_ = {};
+	iter = 0;
 	oldBestVal_ = std::numeric_limits<float>::infinity();
     std::cout.precision(3);
 }
@@ -60,6 +61,7 @@ std::vector<float> Pso::findMin(int m, float eps, const std::optional<std::vecto
 			}
 		}
 
+
         if(visualiseFile) {
             visualiseFile->get() << bestParticleVal_ <<std::endl;
             for (auto particle: particles_) {
@@ -77,7 +79,6 @@ std::vector<float> Pso::findMin(int m, float eps, const std::optional<std::vecto
 
 void Pso::initParticles()
 {
-	iterNoBetter_ = -1;
 	std::pair<float, float> interval = task_->getClosedInterval();
 	std::uniform_real_distribution<> distrStartVal(interval.first, interval.second);
 	float absIntervalDist = std::abs(interval.second - interval.first);
@@ -109,25 +110,28 @@ void Pso::initParticles()
             }
         }
 	}
+    iter++;
+    bestHistory_.push_back(bestParticleVal_);
 }
 
 bool Pso::notStopCriterion(int m, float eps, const std::optional<std::vector<float>>& knownBestX)
 {
 	if(knownBestX)
 	{
-		return std::abs(bestParticleVal_ - task_->calculateTask(*knownBestX)) > eps;
+        float sum = std::inner_product(bestParticle_.begin(), bestParticle_.end(), knownBestX->begin(), 0.0f,
+                                       std::plus<>(),
+                                       [](float a, float b) { return (a - b) * (a - b); }
+        );
+        return std::sqrt(sum) > eps;
 	}
 	else
 	{
-		if (std::abs(oldBestVal_ - bestParticleVal_) < eps)
-		{
-			++iterNoBetter_;
-		}
-		else
-		{
-			iterNoBetter_ = 0;
-			oldBestVal_ = bestParticleVal_;
-		}
-		return iterNoBetter_ < m;
+        if( iter >= m ){
+            oldBestVal_ = bestHistory_[iter-m];
+            if (std::abs(oldBestVal_ - bestParticleVal_) < eps) return false;
+        }
+        iter ++;
+        bestHistory_.push_back(bestParticleVal_);
+        return true;
 	}
 }

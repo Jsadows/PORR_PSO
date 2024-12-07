@@ -36,7 +36,8 @@ int basic_run()
         visualiseFile.close();
     }
     else{
-        odp = pso->findMin(200, 0.01);
+//        std::vector<float> (particleSize, 1.0)
+        odp = pso->findMin(50, 1e-6);
     }
     std::cout <<  t2->calculateTask(odp) << std::endl;
     std::cout << "wektor" << std::endl;

@@ -35,7 +35,8 @@ private:
 	const float c2_;
 	const float c3_;
 	float oldBestVal_;
-	int iterNoBetter_;
+    std::vector<float> bestHistory_;
+	int iter;
 };
 
 #endif
