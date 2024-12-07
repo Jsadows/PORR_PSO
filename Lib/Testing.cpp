@@ -24,8 +24,8 @@ int testing_run()
     std::vector<float> params = {1.0f, 2.0f, 2.0f};
 
     // Number of iterations and precision for stopping criterion
-    int maxIterations = 200;
-    float precision = 0.01f;
+    int maxIterations = 50;
+    float precision = 1e-6;
 
     // Output file for results
     std::ofstream resultsFile("results.csv");
@@ -43,6 +43,8 @@ int testing_run()
                     } else if (task == t2) {
                         knownBestX = std::vector<float>(particleSize, 1.0f); // All 1s for t2
                     }
+                    // different precision when comparing the vector
+                    precision = 1e-3;
                 }
 
                 // Create PSO instance
