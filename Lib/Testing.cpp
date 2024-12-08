@@ -18,11 +18,11 @@ int testing_run()
     std::vector<int> particleSizes = {10, 50, 100};
 
     // Number of particles in the swarm
-    int particleAmount = 50000;
+    int particleAmount = 100000;
 
     // PSO parameters
-    std::vector<float> params = {1.3f, 1.5f, 0.8f};
-//    std::vector<float> params = {1.5f, 1.5f, 0.8f};
+//    std::vector<float> params = {1.3f, 1.5f, 0.8f};
+    std::vector<float> params = {1.3f, 0.8f, 0.8f};
 
     // Number of iterations and precision for stopping criterion
     int maxIterations = 100;

@@ -13,9 +13,10 @@ int basic_run()
 
     //setup for performance
     int particleSize = 100;
-    int particleAmount = 50000;
+    int particleAmount = 100000;
     auto task = t2;
-    std::vector<float> params = {1.3f, 1.5f, 0.8f};
+//    std::vector<float> params = {1.3f, 1.5f, 0.8f};
+    std::vector<float> params = {1.3f, 0.8f, 0.8f};   //better for big problems
     bool vis = false;
 
     //setup for visualise
@@ -36,8 +37,8 @@ int basic_run()
         visualiseFile.close();
     }
     else{
-//        odp = pso->findMin(100, 1e-6);
-        odp = pso->findMin(100, 1e-2,std::vector<float> (particleSize, 0.0));
+        odp = pso->findMin(100, 1e-6);
+//        odp = pso->findMin(100, 1e-2,std::vector<float> (particleSize, 0.0));
     }
     std::cout <<  t2->calculateTask(odp) << std::endl;
     std::cout << "wektor" << std::endl;
