@@ -22,12 +22,13 @@ Pso::Pso(const std::shared_ptr<Task> task, int particleSize, int particleAmount,
     std::cout.precision(3);
 }
 
-std::vector<float> Pso::findMin(int m, float eps, const std::optional<std::vector<float>>& knownBestX, std::optional<std::reference_wrapper<std::ostream>> visualiseFile)
+std::vector<float> Pso::findMin(int m, float eps, const std::optional<std::vector<float>>& knownBestX, int threads_nb, std::optional<std::reference_wrapper<std::ostream>> visualiseFile)
 {
-	initParticles();
+	initParticles(threads_nb);
 	std::uniform_real_distribution<> distrR(0, 1);
 	std::mt19937 gen(std::random_device{}());
     int epoch = 0;
+	omp_set_num_threads(threads_nb);
 	while (notStopCriterion(m, eps, knownBestX))
 	{
         #ifdef USE_OMP
@@ -78,7 +79,7 @@ std::vector<float> Pso::findMin(int m, float eps, const std::optional<std::vecto
 	return bestParticle_;
 }
 
-void Pso::initParticles()
+void Pso::initParticles(int threads_nb)
 {
 	std::pair<float, float> interval = task_->getClosedInterval();
 	std::uniform_real_distribution<> distrStartVal(interval.first, interval.second);
@@ -86,6 +87,7 @@ void Pso::initParticles()
 	std::uniform_real_distribution<> distrStartVelocity(-absIntervalDist, absIntervalDist); //Start speeds could be too high
 	bestParticleVal_ = std::numeric_limits<float>::infinity();
 	std::mt19937 gen(std::random_device{}());
+	omp_set_num_threads(threads_nb);
     #ifdef USE_OMP
 	#pragma omp parallel for schedule(dynamic) default(none) firstprivate(distrStartVal, distrStartVelocity, gen)
 	#endif

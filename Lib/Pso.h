@@ -20,9 +20,9 @@ class Pso
 public:
 	Pso(const std::shared_ptr<Task> task, int particleSize=50, int particleAmount=500, 
 		const float c1 = 1.0f,const float c2=1.0f, const float c3=3.0f);
-	std::vector<float> findMin(int m=5, float eps=0.01f, const std::optional<std::vector<float>>& knownBestX= std::nullopt, std::optional<std::reference_wrapper<std::ostream>> visualiseFile = std::nullopt);
+	std::vector<float> findMin(int m=5, float eps=0.01f, const std::optional<std::vector<float>>& knownBestX= std::nullopt, int threads_nb = 4, std::optional<std::reference_wrapper<std::ostream>> visualiseFile = std::nullopt);
 private:
-	void initParticles();
+	void initParticles(int threads_nb = 4);
 	bool notStopCriterion(int m, float eps, const std::optional<std::vector<float>>& knownBestX);
 	const std::shared_ptr<Task> task_;
 	float bestParticleVal_;
