@@ -1,0 +1,42 @@
+#pragma once
+
+#include <memory>
+#include <vector>
+#include <cmath>
+#include <random>
+#include <utility>
+#include <limits>
+#include <optional>
+#include <iostream>
+#include <fstream>
+#include <cassert>
+#include <functional>
+#include <numeric>
+#include <curand_kernel.h>
+#include "./Task.h"
+#include "./Points.cuh"
+
+class Pso
+{
+public:
+	Pso(const std::shared_ptr<Task> task, int particleSize = 50, int particleAmount = 500,
+		const float c1 = 1.0f, const float c2 = 1.0f, const float c3 = 3.0f);
+	std::vector<float> findMin(int m = 5, float eps = 0.01f, const std::optional<std::vector<float>>& knownBestX = std::nullopt, int threads_nb = 4, std::optional<std::reference_wrapper<std::ostream>> visualiseFile = std::nullopt);
+private:
+	void initParticles(int threads_nb = 4);
+	bool notStopCriterion(int m, float eps, const std::optional<std::vector<float>>& knownBestX);
+	float bestParticleVal_;
+	const std::shared_ptr<Task> task_;
+	std::vector<float> bestParticle_;
+	std::vector<std::vector<float>> bestLocalParticles_;
+	std::vector<float> bestLocalParticlesVals_;
+	std::vector<std::vector<float>> velocity_;
+	std::vector<std::vector<float>> particles_;
+	const float c1_;
+	const float c2_;
+	const float c3_;
+	float oldBestVal_;
+	int maxIter_;
+	std::vector<float> bestHistory_;
+	int iter;
+};
