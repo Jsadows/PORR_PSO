@@ -23,7 +23,9 @@ Pso::Pso(const std::shared_ptr<Task> task, int particleSize, int particleAmount,
 
 std::vector<float> Pso::findMin(int m, float eps, const std::optional<std::vector<float>>& knownBestX, int threads_nb, std::optional<std::reference_wrapper<std::ostream>> visualiseFile)
 {
+    initParticles(threads_nb);
     updateP(particles_, velocity_, bestParticle_, bestLocalParticles_, bestLocalParticlesVals_, bestParticle_.size(), velocity_.size(), c1_, c2_, c3_,  256, true);
+    std::cout << "wewe";
     return bestParticle_;
 }
 

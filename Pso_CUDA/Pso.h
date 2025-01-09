@@ -12,6 +12,7 @@
 #include <cassert>
 #include <functional>
 #include <numeric>
+#include <iostream>
 #include <curand_kernel.h>
 #include "./Task.h"
 #include "./Points.cuh"
