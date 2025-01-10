@@ -23,12 +23,12 @@ Pso::Pso(const std::shared_ptr<Task> task, int particleSize, int particleAmount,
     std::cout.precision(3);
 }
 
-std::vector<float> Pso::findMin(int m, float eps, const std::optional<std::vector<float>>& knownBestX, int threads_nb, std::optional<std::reference_wrapper<std::ostream>> visualiseFile)
+std::vector<float> Pso::findMin(int m, float eps, bool task1, const std::optional<std::vector<float>>& knownBestX, std::optional<std::reference_wrapper<std::ostream>> visualiseFile)
 {
-    initParticles(threads_nb);
+    initParticles();
     while (notStopCriterion(m, eps, knownBestX))
     {
-        updateP(particles_, velocity_, bestParticle_, bestLocalParticles_, bestLocalParticlesVals_, particleSize_, particleAmount_, c1_, c2_, c3_, 256, true);
+        updateP(particles_, velocity_, bestParticle_, bestLocalParticles_, bestLocalParticlesVals_, particleSize_, particleAmount_, c1_, c2_, c3_, 256, task1);
         
         for (int i = 0; i < particleAmount_; ++i)
         {
@@ -38,7 +38,6 @@ std::vector<float> Pso::findMin(int m, float eps, const std::optional<std::vecto
                 {
                     bestParticle_[j] = bestLocalParticles_[i * particleSize_ + j];
                 }
-                //std::cout << bestParticleVal_;
                 bestParticleVal_ = bestLocalParticlesVals_[i];
             }
         }
@@ -48,7 +47,7 @@ std::vector<float> Pso::findMin(int m, float eps, const std::optional<std::vecto
 
 
 
-void Pso::initParticles(int threads_nb)
+void Pso::initParticles()
 {
     std::pair<float, float> interval = task_->getClosedInterval();
     std::uniform_real_distribution<> distrStartVal(interval.first, interval.second);
@@ -77,12 +76,6 @@ void Pso::initParticles(int threads_nb)
     }
     iter++;
     bestHistory_.push_back(bestParticleVal_);
-    std::cout << bestParticleVal_ << std::endl;
-    for (float x : bestParticle_)
-    {
-        std::cout << x << ", ";
-    }
-    std::cout << std::endl;
 }
 
 bool Pso::notStopCriterion(int m, float eps, const std::optional<std::vector<float>>& knownBestX)
