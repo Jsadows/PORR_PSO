@@ -1,5 +1,14 @@
 #include "./Points.cuh"
 
+// Device pointers
+float* d_particles;
+float* d_velocities;
+float* d_bestParticle;
+float* d_bestParticleVal;
+float* d_bestLocalParticles;
+float* d_bestLocalVals;
+curandState* d_state;
+
 __device__ float calculateTask1(const float* x, int size, int startId)
 {
     float sum = 0.0f, product = 1.0f;
@@ -23,13 +32,31 @@ __device__ float calculateTask2(const float* x, int size, int startId)
     return sum;
 }
 
-__global__ void kernelUpdateParticles(float* d_particles, float* d_velocities, float* d_bestParticle, float* d_bestLocalParticles,
+__device__ __forceinline__ float atomicMinFloat(float* addr, float value) {
+    float old;
+    old = !signbit(value) ? __int_as_float(atomicMin((int*)addr, __float_as_int(value))) :
+        __uint_as_float(atomicMax((unsigned int*)addr, __float_as_uint(value)));
+
+    return old;
+}
+
+__global__ void kernelUpdateParticles(float* d_particles, float* d_velocities, float* d_bestParticle, float* d_bestParticleVal, float* d_bestLocalParticles,
     float* d_bestLocalVals, int particleSize, int particleAmount, float c1, float c2, float c3,
-    curandState* state,int blockSize, bool task1=true)
+    curandState* state,int blockSize, bool taskIs1=true)
 {
+    extern __shared__ float sharedMemory[];
+    float* sharedBestVal = sharedMemory;
+    
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx < particleAmount) {
+
         curandState localState = state[idx];
+        float localBestVal = d_bestLocalVals[idx];
+
+        if (threadIdx.x == 0) {
+            *sharedBestVal = FLT_MAX;
+        }
+        __syncthreads();
 
         for (int i = 0; i < particleSize; ++i) {
             float r1 = curand_uniform(&localState);
@@ -42,7 +69,7 @@ __global__ void kernelUpdateParticles(float* d_particles, float* d_velocities, f
             d_particles[idx * particleSize + i] += d_velocities[idx * particleSize + i];
         }
         float newVal; 
-        if (task1)
+        if (taskIs1)
         {
             newVal = calculateTask1(d_particles, particleSize, idx);
         }
@@ -58,6 +85,18 @@ __global__ void kernelUpdateParticles(float* d_particles, float* d_velocities, f
             }
             
         }
+
+        atomicMinFloat(sharedBestVal, localBestVal);
+        __syncthreads();
+
+        // Update global best if block-level best is better
+        if (threadIdx.x == 0 && *sharedBestVal < *d_bestParticleVal) {
+            atomicExch(d_bestParticleVal, *sharedBestVal);
+            for (int i = 0; i < particleSize; i++) {
+                d_bestParticle[i] = d_bestLocalParticles[idx * particleSize + i];
+            }
+        }
+
         state[idx] = localState;
     }
 
@@ -70,47 +109,64 @@ __global__ void initCurand(curandState* state, unsigned long seed, int n) {
     }
 }
 
-void updateP(std::vector<float>& particles, std::vector<float>& velocity, std::vector<float>& bestParticle,
-    std::vector<float>& bestLocalParticles, std::vector<float>& bestLocalVals, int particleSize, int particleAmount, float c1, float c2, float c3, int blockSize, bool task1)
+
+__host__ void initGPU(const std::vector<float>& particles, const std::vector<float>& velocity,
+    const std::vector<float>& bestParticle, const float& bestParticleVal, const std::vector<float>& bestLocalParticles,
+    const std::vector<float>& bestLocalVals, int particleAmount, int particleSize, int blockSize) 
 {
     float* d_particles;
     float* d_velocities;
     float* d_bestParticle;
+    float* d_bestParticleVal;
     float* d_bestLocalParticles;
     float* d_bestLocalVals;
     curandState* d_state;
-   
-    cudaMalloc(&d_particles, particles.size() * sizeof(float));
-    cudaMalloc(&d_velocities, velocity.size()  * sizeof(float));
-    cudaMalloc(&d_bestParticle, bestParticle.size() * sizeof(float));
-    cudaMalloc(&d_bestLocalParticles, bestLocalParticles.size() * sizeof(float));
-    cudaMalloc(&d_bestLocalVals, bestLocalVals.size() * sizeof(float));
+
+    cudaMalloc(&d_particles, particleAmount * particleSize * sizeof(float));
+    cudaMalloc(&d_velocities, particleAmount * particleSize * sizeof(float));
+    cudaMalloc(&d_bestParticle, particleSize * sizeof(float));
+    cudaMalloc(&d_bestParticleVal, particleAmount * sizeof(float));
+    cudaMalloc(&d_bestLocalParticles, particleAmount * particleSize * sizeof(float));
+    cudaMalloc(&d_bestLocalVals, particleAmount * sizeof(float));
     cudaMalloc(&d_state, particleAmount * sizeof(curandState));
 
     cudaMemcpy(d_particles, particles.data(), particles.size() * sizeof(float), cudaMemcpyHostToDevice);
     cudaMemcpy(d_velocities, velocity.data(), velocity.size() * sizeof(float), cudaMemcpyHostToDevice);
     cudaMemcpy(d_bestParticle, bestParticle.data(), bestParticle.size() * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_bestLocalParticles, bestLocalParticles.data(), bestLocalParticles.size()  * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_bestParticleVal, &bestParticleVal, sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_bestLocalParticles, bestLocalParticles.data(), bestLocalParticles.size() * sizeof(float), cudaMemcpyHostToDevice);
     cudaMemcpy(d_bestLocalVals, bestLocalVals.data(), bestLocalVals.size() * sizeof(float), cudaMemcpyHostToDevice);
 
     int threadsPerBlock = blockSize;
     int blocksPerGrid = (particleAmount + threadsPerBlock - 1) / threadsPerBlock;
-    initCurand << <blocksPerGrid, threadsPerBlock >> > (d_state, time(0), particleAmount);
-    kernelUpdateParticles << <blocksPerGrid, threadsPerBlock >> > (d_particles, d_velocities, d_bestParticle, d_bestLocalParticles,
-        d_bestLocalVals, particleSize, particleAmount, c1, c2, c3, d_state, blockSize, task1);
+    initCurand <<<blocksPerGrid, threadsPerBlock>>> (d_state, time(0), particleAmount);
     cudaDeviceSynchronize();
+}
 
-    // Kopiowanie wyników z powrotem na CPU
-    cudaMemcpy(velocity.data(), d_velocities, velocity.size() * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(particles.data(), d_particles, particles.size() * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(bestLocalVals.data(), d_bestLocalVals, bestLocalVals.size() * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(bestLocalParticles.data(), d_bestLocalParticles, bestLocalParticles.size() * sizeof(float), cudaMemcpyDeviceToHost);
 
-    // Zwolnienie pamiêci GPU
+__host__ void freeGPU() 
+{
     cudaFree(d_particles);
     cudaFree(d_velocities);
     cudaFree(d_bestParticle);
+    cudaFree(d_bestParticleVal);
     cudaFree(d_bestLocalParticles);
     cudaFree(d_bestLocalVals);
     cudaFree(d_state);
+}
+
+
+__host__ void updateP(int particleSize, int particleAmount, float c1, float c2, float c3, int blockSize, bool taskIs1)
+{
+    int threadsPerBlock = blockSize;
+    int blocksPerGrid = (particleAmount + threadsPerBlock - 1) / threadsPerBlock;
+    kernelUpdateParticles <<<blocksPerGrid, threadsPerBlock>>> (d_particles, d_velocities, d_bestParticle, d_bestParticleVal, d_bestLocalParticles,
+        d_bestLocalVals, particleSize, particleAmount, c1, c2, c3, d_state, blockSize, taskIs1);
+    cudaDeviceSynchronize();
+}
+
+
+__host__ void syncResultsToHost(std::vector<float>& bestParticle, float& bestParticleVal) {
+    cudaMemcpy(bestParticle.data(), d_bestParticle, bestParticle.size() * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(&bestParticleVal, d_bestParticleVal, sizeof(float), cudaMemcpyDeviceToHost);
 }

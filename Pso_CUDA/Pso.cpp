@@ -21,27 +21,25 @@ Pso::Pso(const std::shared_ptr<Task> task, int particleSize, int particleAmount,
     maxIter_ = 500;
     oldBestVal_ = std::numeric_limits<float>::infinity();
     std::cout.precision(3);
+    blockSize_ = 128;
 }
 
-std::vector<float> Pso::findMin(int m, float eps, bool task1, const std::optional<std::vector<float>>& knownBestX, std::optional<std::reference_wrapper<std::ostream>> visualiseFile)
+std::vector<float> Pso::findMin(int m, float eps, bool taskIs1, const std::optional<std::vector<float>>& knownBestX, std::optional<std::reference_wrapper<std::ostream>> visualiseFile)
 {
     initParticles();
+    initGPU(particles_, velocity_, bestParticle_, bestParticleVal_, bestLocalParticles_, bestLocalParticlesVals_, particleAmount_, particleSize_, blockSize_);
+
     while (notStopCriterion(m, eps, knownBestX))
     {
-        updateP(particles_, velocity_, bestParticle_, bestLocalParticles_, bestLocalParticlesVals_, particleSize_, particleAmount_, c1_, c2_, c3_, 256, task1);
-        
-        for (int i = 0; i < particleAmount_; ++i)
-        {
-            if (bestParticleVal_ > bestLocalParticlesVals_[i])
-            {
-                for (int j = 0; j < particleSize_; ++j)
-                {
-                    bestParticle_[j] = bestLocalParticles_[i * particleSize_ + j];
-                }
-                bestParticleVal_ = bestLocalParticlesVals_[i];
-            }
-        }
+        updateP(particleSize_, particleAmount_, c1_, c2_, c3_, 8, taskIs1);
+
+        syncResultsToHost(bestParticle_, bestParticleVal_);
     }
+
+    syncResultsToHost(bestParticle_, bestParticleVal_);
+
+    freeGPU();
+
     return bestParticle_;
 }
 
