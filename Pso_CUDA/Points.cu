@@ -35,7 +35,7 @@ __global__ void kernelUpdateParticles(float* d_particles, float* d_velocities, f
             float r1 = curand_uniform(&localState);
             float r2 = curand_uniform(&localState);
             float r3 = curand_uniform(&localState);
-           d_velocities[idx + i] = c1 * r1 * d_velocities[idx + i] +
+           d_velocities[idx * particleSize + i] = c1 * r1 * d_velocities[idx * particleSize + i] +
                 c2 * r2 * (d_bestLocalParticles[idx * particleSize + i] - d_particles[idx * particleSize + i]) +
                 c3 * r3 * (d_bestParticle[i] - d_particles[idx * particleSize + i]);
 
@@ -106,7 +106,6 @@ void updateP(std::vector<float>& particles, std::vector<float>& velocity, std::v
     cudaMemcpy(bestLocalVals.data(), d_bestLocalVals, bestLocalVals.size() * sizeof(float), cudaMemcpyDeviceToHost);
     cudaMemcpy(bestLocalParticles.data(), d_bestLocalParticles, bestLocalParticles.size() * sizeof(float), cudaMemcpyDeviceToHost);
 
-
     // Zwolnienie pamiêci GPU
     cudaFree(d_particles);
     cudaFree(d_velocities);
@@ -114,5 +113,4 @@ void updateP(std::vector<float>& particles, std::vector<float>& velocity, std::v
     cudaFree(d_bestLocalParticles);
     cudaFree(d_bestLocalVals);
     cudaFree(d_state);
-    std::cout << "end";
 }

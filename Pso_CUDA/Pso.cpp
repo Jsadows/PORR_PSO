@@ -28,20 +28,21 @@ std::vector<float> Pso::findMin(int m, float eps, const std::optional<std::vecto
     initParticles(threads_nb);
     while (notStopCriterion(m, eps, knownBestX))
     {
-        ++iter;
         updateP(particles_, velocity_, bestParticle_, bestLocalParticles_, bestLocalParticlesVals_, particleSize_, particleAmount_, c1_, c2_, c3_, 256, true);
+        
         for (int i = 0; i < particleAmount_; ++i)
         {
             if (bestParticleVal_ > bestLocalParticlesVals_[i])
             {
                 for (int j = 0; j < particleSize_; ++j)
                 {
-                    bestLocalParticles_[i* particleSize_ + j] = particles_[i* particleSize_ + j];
+                    bestParticle_[j] = bestLocalParticles_[i * particleSize_ + j];
                 }
+                //std::cout << bestParticleVal_;
+                bestParticleVal_ = bestLocalParticlesVals_[i];
             }
         }
     }
-
     return bestParticle_;
 }
 
@@ -76,6 +77,12 @@ void Pso::initParticles(int threads_nb)
     }
     iter++;
     bestHistory_.push_back(bestParticleVal_);
+    std::cout << bestParticleVal_ << std::endl;
+    for (float x : bestParticle_)
+    {
+        std::cout << x << ", ";
+    }
+    std::cout << std::endl;
 }
 
 bool Pso::notStopCriterion(int m, float eps, const std::optional<std::vector<float>>& knownBestX)
