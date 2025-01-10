@@ -29,10 +29,10 @@ private:
 	float bestParticleVal_;
 	const std::shared_ptr<Task> task_;
 	std::vector<float> bestParticle_;
-	std::vector<std::vector<float>> bestLocalParticles_;
+	std::vector<float> bestLocalParticles_;
 	std::vector<float> bestLocalParticlesVals_;
-	std::vector<std::vector<float>> velocity_;
-	std::vector<std::vector<float>> particles_;
+	std::vector<float> velocity_;
+	std::vector<float> particles_;
 	const float c1_;
 	const float c2_;
 	const float c3_;
@@ -40,4 +40,6 @@ private:
 	int maxIter_;
 	std::vector<float> bestHistory_;
 	int iter;
+	int particleSize_;
+	int particleAmount_;
 };

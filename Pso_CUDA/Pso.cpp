@@ -7,11 +7,13 @@ Pso::Pso(const std::shared_ptr<Task> task, int particleSize, int particleAmount,
     , c1_(c1)
     , c2_(c2)
     , c3_(c3)
+    , particleSize_(particleSize)
+    , particleAmount_(particleAmount)
 {
-    particles_.resize(particleAmount, std::vector<float>(particleSize));
-    velocity_.resize(particleAmount, std::vector<float>(particleSize));
+    particles_.resize(particleAmount * particleSize);
+    velocity_.resize(particleAmount * particleSize);
     bestParticle_.resize(particleSize);
-    bestLocalParticles_.resize(particleAmount, std::vector<float>(particleSize));
+    bestLocalParticles_.resize(particleAmount * particleSize);
     bestLocalParticlesVals_.resize(particleAmount);
     bestParticleVal_ = std::numeric_limits<float>::infinity();
     bestHistory_ = {};
@@ -24,8 +26,22 @@ Pso::Pso(const std::shared_ptr<Task> task, int particleSize, int particleAmount,
 std::vector<float> Pso::findMin(int m, float eps, const std::optional<std::vector<float>>& knownBestX, int threads_nb, std::optional<std::reference_wrapper<std::ostream>> visualiseFile)
 {
     initParticles(threads_nb);
-    updateP(particles_, velocity_, bestParticle_, bestLocalParticles_, bestLocalParticlesVals_, bestParticle_.size(), velocity_.size(), c1_, c2_, c3_,  256, true);
-    std::cout << "wewe";
+    while (notStopCriterion(m, eps, knownBestX))
+    {
+        ++iter;
+        updateP(particles_, velocity_, bestParticle_, bestLocalParticles_, bestLocalParticlesVals_, particleSize_, particleAmount_, c1_, c2_, c3_, 256, true);
+        for (int i = 0; i < particleAmount_; ++i)
+        {
+            if (bestParticleVal_ > bestLocalParticlesVals_[i])
+            {
+                for (int j = 0; j < particleSize_; ++j)
+                {
+                    bestLocalParticles_[i* particleSize_ + j] = particles_[i* particleSize_ + j];
+                }
+            }
+        }
+    }
+
     return bestParticle_;
 }
 
@@ -39,23 +55,23 @@ void Pso::initParticles(int threads_nb)
     std::uniform_real_distribution<> distrStartVelocity(-absIntervalDist, absIntervalDist); //Start speeds could be too high
     bestParticleVal_ = std::numeric_limits<float>::infinity();
     std::mt19937 gen(std::random_device{}());
-    for (int i = 0; i < particles_.size(); ++i)
+    for (int i = 0; i < particleAmount_; ++i)
     {
-        for (int x = 0; x < particles_[i].size(); ++x)
+        std::vector<float> particle(particleSize_);
+        for (int x = 0; x < particleSize_; ++x)
         {
-            particles_[i][x] = distrStartVal(gen);
-            velocity_[i][x] = distrStartVelocity(gen);
+            particles_[i * particleSize_ + x] = distrStartVal(gen);
+            velocity_[i * particleSize_ + x] = distrStartVelocity(gen);
+            particle[x] = particles_[i * particleSize_ + x];
         }
-        float taskValue = task_->calculateTask(particles_[i]);
-        bestLocalParticles_[i] = particles_[i];
+        float taskValue = task_->calculateTask(particle);
+        std::copy(particle.begin(), particle.end(), bestLocalParticles_.begin() + i * particleSize_);
         bestLocalParticlesVals_[i] = taskValue;
         if (taskValue < bestParticleVal_)
         {
-            {
-                bestParticleVal_ = taskValue;
-                bestParticle_ = particles_[i];
-                oldBestVal_ = taskValue;
-            }
+            bestParticleVal_ = taskValue;
+            bestParticle_ = particle;
+            oldBestVal_ = taskValue;
         }
     }
     iter++;
