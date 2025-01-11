@@ -17,7 +17,7 @@ Pso::Pso(const std::shared_ptr<Task> task, int particleSize, int particleAmount,
     maxIter_ = 500;
     oldBestVal_ = std::numeric_limits<float>::infinity();
     std::cout.precision(3);
-    blockSize_ = 128;
+    blockSize_ = 256;
 }
 
 std::vector<float> Pso::findMin(int m, float eps, bool taskIs1, const std::optional<std::vector<float>>& knownBestX, std::optional<std::reference_wrapper<std::ostream>> visualiseFile)
@@ -32,8 +32,6 @@ std::vector<float> Pso::findMin(int m, float eps, bool taskIs1, const std::optio
         syncResultsToHost(bestParticle_, bestParticleVal_);
         //std::cout <<"On cpu:"<< bestParticleVal_ << std::endl;
     }
-
-    syncResultsToHost(bestParticle_, bestParticleVal_);
 
     freeGPU();
 
