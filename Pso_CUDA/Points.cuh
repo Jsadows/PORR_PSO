@@ -6,9 +6,7 @@
 
 void updateP(int particleSize, int particleAmount, float c1, float c2, float c3, int blockSize, bool taskIs1);
 
-void initGPU(const std::vector<float>& particles, const std::vector<float>& velocity,
-    const std::vector<float>& bestParticle, const float& bestParticleVal, const std::vector<float>& bestLocalParticles,
-    const std::vector<float>& bestLocalVals, int particleAmount, int particleSize, int blockSize);
+void initGPU(int particleAmount, int particleSize, int blockSize, float intervalMin, float intervalMax, bool taskIs1);
 
 void freeGPU();
 

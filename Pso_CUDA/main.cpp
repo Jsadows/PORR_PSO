@@ -15,7 +15,7 @@ int main()
     bool vis = false;
     std::unique_ptr<Pso> pso = std::make_unique<Pso>(task, particleSize, particleAmount, params[0], params[1], params[2]);
     auto startTime = std::chrono::high_resolution_clock::now();
-    std::vector<float> min = pso -> findMin(100, 1e-6, false);
+    std::vector<float> min = pso -> findMin(100, 1e-6, task==t1);
     auto endTime = std::chrono::high_resolution_clock::now();
     for (float x : min)
     {

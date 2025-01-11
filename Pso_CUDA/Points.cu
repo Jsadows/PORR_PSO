@@ -104,7 +104,7 @@ __global__ void kernelUpdateParticles(float* d_particles, float* d_velocities, f
             }
 
             for (int i = 0; i < particleSize; i++) {
-                d_bestParticle[i] = d_bestLocalParticles[testBestIdx * particleSize + i];   //this needs to sync with the other blocks!
+                d_bestParticle[i] = d_bestLocalParticles[testBestIdx * particleSize + i];   //this needs to sync with the other blocks! - race
 
             }
         }
@@ -121,9 +121,32 @@ __global__ void initCurand(curandState* state, unsigned long seed, int n) {
     }
 }
 
-__host__ void initGPU(const std::vector<float>& particles, const std::vector<float>& velocity,
-    const std::vector<float>& bestParticle, const float& bestParticleVal, const std::vector<float>& bestLocalParticles,
-    const std::vector<float>& bestLocalVals, int particleAmount, int particleSize, int blockSize) 
+__global__ void initParticlesOnGPU(float* d_particles, float* d_velocities, float* d_bestLocalParticles,
+    float* d_bestLocalVals, float* d_bestParticle, int particleSize, int particleAmount, curandState* state, float intervalMin, float intervalMax, bool taskIs1)
+{
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < particleAmount) {
+        curandState localState = state[idx];
+
+        float range = intervalMax - intervalMin;
+        for (int i = 0; i < particleSize; ++i) {
+            float randomVal = intervalMin + curand_uniform(&localState) * range;
+            float randomVelocity = -range + curand_uniform(&localState) * (2.0f * range);
+
+            d_particles[idx * particleSize + i] = randomVal;
+            d_velocities[idx * particleSize + i] = randomVelocity;
+            d_bestLocalParticles[idx * particleSize + i] = randomVal;
+            if (idx == 0) d_bestParticle[i] = randomVal;   //not perfect initialization - to the first particle not the best particle
+        }
+
+        float initialVal;
+        if (taskIs1) initialVal = calculateTask1(d_particles, particleSize, idx);
+        else initialVal = calculateTask2(d_particles, particleSize, idx);
+        d_bestLocalVals[idx] = initialVal;
+    }
+}
+
+__host__ void initGPU(int particleAmount, int particleSize, int blockSize, float intervalMin, float intervalMax, bool taskIs1)
 {
     cudaMalloc(&d_particles, particleAmount * particleSize * sizeof(float));
     cudaMalloc(&d_velocities, particleAmount * particleSize * sizeof(float));
@@ -133,17 +156,17 @@ __host__ void initGPU(const std::vector<float>& particles, const std::vector<flo
     cudaMalloc(&d_bestLocalVals, particleAmount * sizeof(float));
     cudaMalloc(&d_state, particleAmount * sizeof(curandState));
 
-    cudaMemcpy(d_particles, particles.data(), particles.size() * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_velocities, velocity.data(), velocity.size() * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_bestParticle, bestParticle.data(), bestParticle.size() * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_bestParticleVal, &bestParticleVal, sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_bestLocalParticles, bestLocalParticles.data(), bestLocalParticles.size() * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_bestLocalVals, bestLocalVals.data(), bestLocalVals.size() * sizeof(float), cudaMemcpyHostToDevice);
-
     int threadsPerBlock = blockSize;
     int blocksPerGrid = (particleAmount + threadsPerBlock - 1) / threadsPerBlock;
-    initCurand <<<blocksPerGrid, threadsPerBlock>>> (d_state, time(0), particleAmount);
+    initCurand << <blocksPerGrid, threadsPerBlock >> > (d_state, time(0), particleAmount);
     cudaDeviceSynchronize();
+
+    initParticlesOnGPU << <blocksPerGrid, threadsPerBlock >> > (d_particles, d_velocities, d_bestLocalParticles,
+        d_bestLocalVals, d_bestParticle, particleSize, particleAmount, d_state, intervalMin, intervalMax, taskIs1);
+    cudaDeviceSynchronize();
+
+    float initBestParticleVal = FLT_MAX;
+    cudaMemcpy(d_bestParticleVal, &initBestParticleVal, sizeof(float), cudaMemcpyHostToDevice);
 }
 
 

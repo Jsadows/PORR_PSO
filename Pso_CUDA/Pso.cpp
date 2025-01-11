@@ -10,11 +10,7 @@ Pso::Pso(const std::shared_ptr<Task> task, int particleSize, int particleAmount,
     , particleSize_(particleSize)
     , particleAmount_(particleAmount)
 {
-    particles_.resize(particleAmount * particleSize);
-    velocity_.resize(particleAmount * particleSize);
     bestParticle_.resize(particleSize);
-    bestLocalParticles_.resize(particleAmount * particleSize);
-    bestLocalParticlesVals_.resize(particleAmount);
     bestParticleVal_ = std::numeric_limits<float>::infinity();
     bestHistory_ = {};
     iter = 0;
@@ -26,8 +22,9 @@ Pso::Pso(const std::shared_ptr<Task> task, int particleSize, int particleAmount,
 
 std::vector<float> Pso::findMin(int m, float eps, bool taskIs1, const std::optional<std::vector<float>>& knownBestX, std::optional<std::reference_wrapper<std::ostream>> visualiseFile)
 {
-    initParticles();
-    initGPU(particles_, velocity_, bestParticle_, bestParticleVal_, bestLocalParticles_, bestLocalParticlesVals_, particleAmount_, particleSize_, blockSize_);
+    std::pair<float, float> interval = task_->getClosedInterval();
+    initGPU(particleAmount_, particleSize_, blockSize_, interval.first, interval.second, taskIs1);
+
 
     while (notStopCriterion(m, eps, knownBestX))
     {
@@ -43,38 +40,6 @@ std::vector<float> Pso::findMin(int m, float eps, bool taskIs1, const std::optio
     return bestParticle_;
 }
 
-
-
-void Pso::initParticles()
-{
-    std::pair<float, float> interval = task_->getClosedInterval();
-    std::uniform_real_distribution<> distrStartVal(interval.first, interval.second);
-    float absIntervalDist = std::abs(interval.second - interval.first);
-    std::uniform_real_distribution<> distrStartVelocity(-absIntervalDist, absIntervalDist); //Start speeds could be too high
-    bestParticleVal_ = std::numeric_limits<float>::infinity();
-    std::mt19937 gen(std::random_device{}());
-    for (int i = 0; i < particleAmount_; ++i)
-    {
-        std::vector<float> particle(particleSize_);
-        for (int x = 0; x < particleSize_; ++x)
-        {
-            particles_[i * particleSize_ + x] = distrStartVal(gen);
-            velocity_[i * particleSize_ + x] = distrStartVelocity(gen);
-            particle[x] = particles_[i * particleSize_ + x];
-        }
-        float taskValue = task_->calculateTask(particle);
-        std::copy(particle.begin(), particle.end(), bestLocalParticles_.begin() + i * particleSize_);
-        bestLocalParticlesVals_[i] = taskValue;
-        if (taskValue < bestParticleVal_)
-        {
-            bestParticleVal_ = taskValue;
-            bestParticle_ = particle;
-            oldBestVal_ = taskValue;
-        }
-    }
-    iter++;
-    bestHistory_.push_back(bestParticleVal_);
-}
 
 bool Pso::notStopCriterion(int m, float eps, const std::optional<std::vector<float>>& knownBestX)
 {
