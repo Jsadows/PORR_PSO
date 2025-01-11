@@ -9,9 +9,9 @@ int main()
     std::shared_ptr<Task> t1 = std::make_unique<Task1>();
     std::shared_ptr<Task> t2 = std::make_unique<Task2>();
     int particleSize = 100;
-    int particleAmount = 100000;
+    int particleAmount = 102400;    //particleAmount must be multiple of blockSize
     auto task = t2;
-    std::vector<float> params = { 1.3f, 1.5f, 0.8f };
+    std::vector<float> params = { 1.3f, 0.8f, 0.8f };
     bool vis = false;
     std::unique_ptr<Pso> pso = std::make_unique<Pso>(task, particleSize, particleAmount, params[0], params[1], params[2]);
     auto startTime = std::chrono::high_resolution_clock::now();
