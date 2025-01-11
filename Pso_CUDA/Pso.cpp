@@ -31,9 +31,9 @@ std::vector<float> Pso::findMin(int m, float eps, bool taskIs1, const std::optio
 
     while (notStopCriterion(m, eps, knownBestX))
     {
-        updateP(particleSize_, particleAmount_, c1_, c2_, c3_, 8, taskIs1);
-
+        updateP(particleSize_, particleAmount_, c1_, c2_, c3_, blockSize_, taskIs1);
         syncResultsToHost(bestParticle_, bestParticleVal_);
+        //std::cout <<"On cpu:"<< bestParticleVal_ << std::endl;
     }
 
     syncResultsToHost(bestParticle_, bestParticleVal_);

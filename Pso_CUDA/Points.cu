@@ -51,7 +51,6 @@ __global__ void kernelUpdateParticles(float* d_particles, float* d_velocities, f
     if (idx < particleAmount) {
 
         curandState localState = state[idx];
-        float localBestVal = d_bestLocalVals[idx];
 
         if (threadIdx.x == 0) {
             *sharedBestVal = FLT_MAX;
@@ -68,7 +67,7 @@ __global__ void kernelUpdateParticles(float* d_particles, float* d_velocities, f
 
             d_particles[idx * particleSize + i] += d_velocities[idx * particleSize + i];
         }
-        float newVal; 
+        float newVal = FLT_MAX; 
         if (taskIs1)
         {
             newVal = calculateTask1(d_particles, particleSize, idx);
@@ -84,16 +83,29 @@ __global__ void kernelUpdateParticles(float* d_particles, float* d_velocities, f
                 d_bestLocalParticles[idx* particleSize + i] = d_particles[idx* particleSize + i ];
             }
             
+            atomicMinFloat(sharedBestVal, newVal);
         }
 
-        atomicMinFloat(sharedBestVal, localBestVal);
         __syncthreads();
 
         // Update global best if block-level best is better
         if (threadIdx.x == 0 && *sharedBestVal < *d_bestParticleVal) {
-            atomicExch(d_bestParticleVal, *sharedBestVal);
+            
+            atomicExch(d_bestParticleVal, *sharedBestVal);  //this is atomic so no conflict
+
+            //may be slow but idk how else. its only called when there is a new min
+            float testBestVal = FLT_MAX;
+            int testBestIdx = 0;
+            for (int idx_i = blockIdx.x * blockDim.x; idx_i < blockIdx.x * blockDim.x + blockSize; idx_i++) {
+                if (d_bestLocalVals[idx_i] < testBestVal) {
+                    testBestVal = d_bestLocalVals[idx_i];
+                    testBestIdx = idx_i;
+                }
+            }
+
             for (int i = 0; i < particleSize; i++) {
-                d_bestParticle[i] = d_bestLocalParticles[idx * particleSize + i];
+                d_bestParticle[i] = d_bestLocalParticles[testBestIdx * particleSize + i];   //this needs to sync with the other blocks!
+
             }
         }
 
@@ -109,23 +121,14 @@ __global__ void initCurand(curandState* state, unsigned long seed, int n) {
     }
 }
 
-
 __host__ void initGPU(const std::vector<float>& particles, const std::vector<float>& velocity,
     const std::vector<float>& bestParticle, const float& bestParticleVal, const std::vector<float>& bestLocalParticles,
     const std::vector<float>& bestLocalVals, int particleAmount, int particleSize, int blockSize) 
 {
-    float* d_particles;
-    float* d_velocities;
-    float* d_bestParticle;
-    float* d_bestParticleVal;
-    float* d_bestLocalParticles;
-    float* d_bestLocalVals;
-    curandState* d_state;
-
     cudaMalloc(&d_particles, particleAmount * particleSize * sizeof(float));
     cudaMalloc(&d_velocities, particleAmount * particleSize * sizeof(float));
     cudaMalloc(&d_bestParticle, particleSize * sizeof(float));
-    cudaMalloc(&d_bestParticleVal, particleAmount * sizeof(float));
+    cudaMalloc(&d_bestParticleVal, sizeof(float));
     cudaMalloc(&d_bestLocalParticles, particleAmount * particleSize * sizeof(float));
     cudaMalloc(&d_bestLocalVals, particleAmount * sizeof(float));
     cudaMalloc(&d_state, particleAmount * sizeof(curandState));
