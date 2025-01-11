@@ -30,7 +30,7 @@ std::vector<float> Pso::findMin(int m, float eps, bool taskIs1, const std::optio
     {
         updateP(particleSize_, particleAmount_, c1_, c2_, c3_, blockSize_, taskIs1);
         syncResultsToHost(bestParticle_, bestParticleVal_);
-        std::cout <<"Best: "<< bestParticleVal_ << std::endl;
+        //std::cout <<"Best: "<< bestParticleVal_ << std::endl;
     }
 
     freeGPU();
