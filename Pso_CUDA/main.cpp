@@ -29,18 +29,23 @@ void makeTest(std::vector<float> params, std::shared_ptr<Task> task, std::shared
 {
     std::vector<float> durr1;
     std::vector<float> mins1;
+
+    int particleAmount = particleSize * 1024;
+    int m = particleSize;
+    float eps = knownBestX ? 1e-02 : 1e-06;
+
     for (size_t i = 0; i < 5; i++)
     {
-        std::unique_ptr<Pso> pso = std::make_unique<Pso>(task, particleSize, 102400, params[0], params[1], params[2]);
+        std::unique_ptr<Pso> pso = std::make_unique<Pso>(task, particleSize, particleAmount, params[0], params[1], params[2]);
         auto startTime = std::chrono::high_resolution_clock::now();
-        std::vector<float> min = pso->findMin(100, 1e-6, task == t1);
+        std::vector<float> min = pso->findMin(m, 1e-6, task == t1, knownBestX);
         auto endTime = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
         durr1.push_back(duration);
         mins1.push_back(task->calculateTask(min));
     }
     std::string isKn = knownBestX ? ", Yes, " : ", No, ";
-    std::cout << t+", "<<particleSize<< isKn;
+    std::cout << std::setprecision(3) << t << ", " << particleSize << isKn << particleAmount << ", " << m << ", " << eps;
     calculateStatistics(durr1);
     calculateStatistics(mins1);
     std::cout << std::endl;
@@ -51,10 +56,11 @@ int main()
     std::cout << "Initializing...\n";
     std::shared_ptr<Task> t1 = std::make_shared<Task1>();
     std::shared_ptr<Task> t2 = std::make_shared<Task2>();
-    int particleSize = 100;
-    int particleAmount = 102400;    //particleAmount must be multiple of blockSize
+    //int particleSize = 100;
+    //int particleAmount = 102400;    //particleAmount must be multiple of blockSize
     auto task = t2;
     std::vector<float> params = { 1.3f, 0.8f, 0.8f };
+    std::cout << "task, pSize, bKX, pAmount, m, eps, tMin, tMax, tAvg, tVar, resMin, resMax, resAvg, resVar" << std::endl;
     // T1 tests
     std::vector<float> vec1(10, 0.0f);
     makeTest(params, t1, t1, 10, std::nullopt, "t1");
