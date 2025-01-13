@@ -45,7 +45,7 @@ void makeTest(std::vector<float> params, std::shared_ptr<Task> task, std::shared
         mins1.push_back(task->calculateTask(min));
     }
     std::string isKn = knownBestX ? ", Yes, " : ", No, ";
-    std::cout << std::setprecision(3) << t << ", " << particleSize << isKn << particleAmount << ", " << m << ", " << eps;
+    std::cout << std::setprecision(3) << t << ", " << particleSize << isKn << particleAmount << ", " << m << ", " << eps<<", ";
     calculateStatistics(durr1);
     calculateStatistics(mins1);
     std::cout << std::endl;
