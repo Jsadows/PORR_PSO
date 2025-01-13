@@ -29,9 +29,9 @@ void makeTest(std::vector<float> params, std::shared_ptr<Task> task, std::shared
 {
     std::vector<float> durr1;
     std::vector<float> mins1;
-    std::unique_ptr<Pso> pso = std::make_unique<Pso>(task, particleSize, 102400, params[0], params[1], params[2]);
     for (size_t i = 0; i < 5; i++)
     {
+        std::unique_ptr<Pso> pso = std::make_unique<Pso>(task, particleSize, 102400, params[0], params[1], params[2]);
         auto startTime = std::chrono::high_resolution_clock::now();
         std::vector<float> min = pso->findMin(100, 1e-6, task == t1);
         auto endTime = std::chrono::high_resolution_clock::now();
